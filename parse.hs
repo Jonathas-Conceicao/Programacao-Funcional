@@ -1,9 +1,18 @@
 import Data.Char
+import Data.List
 
 data E
   = Num Int
   | Soma E E
   | Mult E E
+  deriving (Show, Eq)
+
+data Token
+  = Num_T Int
+  | OPar_T
+  | CPar_T
+  | Soma_T
+  | Mult_T
   deriving (Show, Eq)
 
 interpretExp :: E -> Int
@@ -12,17 +21,35 @@ interpretExp (Soma e1 e2) = (interpretExp e1) + (interpretExp e2)
 interpretExp (Mult e1 e2) = (interpretExp e1) * (interpretExp e2)
 
 parseExp :: String -> E
-parseExp = error "Todo parseExp"
+parseExp = parseExpAux . getTokens
 
-split :: String -> [String]
-split "" = []
-split list@(c:cs)
-  | c == ' '  = split cs
-  | c == '('  = "(":(split cs)
-  | c == ')'  = ")":(split cs)
-  | c == '+'  = "+":(split cs)
-  | c == '*'  = "*":(split cs)
-  | otherwise = num:(split res)
+parseExpAux :: [Token] -> E
+parseExpAux [Num_T n] = Num n
+parseExpAux (OPar_T:ts) = parseExpAux (getInnerExp ts)
+parseExpAux list@(Num_T n:Mult_T:ts) = Mult (Num n) (parseExpAux ts)
+parseExpAux list@(Num_T n:Soma_T:ts) = Soma (Num n) (parseExpAux ts)
+
+getInnerExp :: [Token] -> [Token]
+getInnerExp = getInnerExpAux 0
+  where
+    getInnerExpAux 0 (CPar_T:ts) = []
+    getInnerExpAux 0 (OPar_T:ts) = OPar_T:(getInnerExpAux 1     ts)
+    getInnerExpAux n (CPar_T:ts) = CPar_T:(getInnerExpAux (n-1) ts)
+    getInnerExpAux n (t     :ts) = t     :(getInnerExpAux n     ts)
+
+findToken :: (Eq a) => [a] -> a -> ([a],[a])
+findToken l t = case elemIndex t l of
+  Just n -> splitAt n l
+
+getTokens :: String -> [Token]
+getTokens "" = []
+getTokens list@(c:cs)
+  | c == ' '  = getTokens cs
+  | c == '('  = (OPar_T):(getTokens cs)
+  | c == ')'  = (CPar_T):(getTokens cs)
+  | c == '+'  = (Soma_T):(getTokens cs)
+  | c == '*'  = (Mult_T):(getTokens cs)
+  | otherwise = (Num_T (read num)):(getTokens res)
   where
     (num, res) = getNum list ""
     getNum [] x = (x, [])
