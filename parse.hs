@@ -25,7 +25,15 @@ parseExp = parseExpAux . getTokens
 
 parseExpAux :: [Token] -> E
 parseExpAux [Num_T n] = Num n
-parseExpAux (OPar_T:ts) = parseExpAux (getInnerExp ts)
+parseExpAux (OPar_T:ts) = if (length outter > 0)
+  then case o of
+  Mult_T -> Mult (parseExpAux inner) (parseExpAux utter)
+  Soma_T -> Soma (parseExpAux inner) (parseExpAux utter)
+  else (parseExpAux inner)
+  where
+    inner  = (getInnerExp ts)
+    outter = drop ((+1) $ length inner) ts
+    (o:utter) = outter
 parseExpAux list@(Num_T n:Mult_T:ts) = Mult (Num n) (parseExpAux ts)
 parseExpAux list@(Num_T n:Soma_T:ts) = Soma (Num n) (parseExpAux ts)
 
